@@ -34,18 +34,19 @@
 
 ## للمطورين
 
-Electron + React + TypeScript، وقاعدة SQLite عبر `node:sqlite` المدمجة في Electron (بدون مكتبات native).
+Tauri 2 + React + TypeScript. المنطق كله بلغة Rust مع SQLite مدمجة (rusqlite) وقراءة ملفات Excel عبر calamine، والواجهة React كما هي. المثبّت أصغر بكثير من نسخة Electron لأنه يستخدم WebView2 الموجود في ويندوز بدل حزم متصفح كامل.
 
 ```bash
 npm install
-npm run dev        # تشغيل للتطوير
-npm test           # اختبارات السيناريوهات (تحتاج Node 22.5 أو أحدث)
+npm run dev        # تشغيل للتطوير (يحتاج Rust، وعلى لينكس مكتبات WebKitGTK)
+npm test           # اختبارات السيناريوهات (cargo test)
 npm run typecheck
-npm run dist:win   # مثبّت ويندوز في release/
+npm run dist:win   # مثبّت ويندوز في target/release/bundle/nsis/
 ```
 
-- `src/main/services/` منطق النظام كله (يعمل ويُختبر بدون Electron).
-- `src/main/db/schema.ts` الجداول؛ أي تغيير يُضاف كـ migration جديدة في آخر القائمة.
-- `src/shared/api.ts` عقد الاتصال بين الواجهة والمنطق.
+- `core/` منطق النظام كله (يعمل ويُختبر بدون Tauri)، والاختبارات في `core/tests/`.
+- `core/src/schema.rs` الجداول؛ أي تغيير يُضاف كـ migration جديدة في آخر القائمة. قواعد بيانات نسخة Electron تُفتح كما هي.
+- `core/src/api.rs` نقطة الدخول الوحيدة من الواجهة، بنفس أسماء الطلبات في `src/shared/api.ts`.
+- `src-tauri/` نافذة التطبيق ونوافذ اختيار الملفات.
 - `src/renderer/` الواجهة العربية.
-- قاعدة البيانات في `%APPDATA%/Tamween/tamween.sqlite` على ويندوز (أو المسار في `TAMWEEN_DB`).
+- قاعدة البيانات في `%APPDATA%/eg.tamween.desktop/tamween.sqlite` على ويندوز (أو المسار في `TAMWEEN_DB`).

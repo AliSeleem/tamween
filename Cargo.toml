@@ -1,0 +1,12 @@
+[workspace]
+members = ["core", "src-tauri"]
+resolver = "2"
+
+# The installer size is the point of this shell: strip symbols, optimize for size,
+# one codegen unit, and abort instead of carrying unwinding tables.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -7,6 +7,7 @@ import { DistributionTable, PosTxTable, RightsTable } from '../components/tables
 import { Empty, ErrorBox, useAction } from '../components/ui'
 import { useSession } from '../session'
 import { CARD_STATUS_LABEL, CardForm } from './Cards'
+import { bridge } from '../bridge'
 
 const ENTRY_LABEL: Record<string, string> = {
   entitlement: 'استحقاق',
@@ -45,7 +46,7 @@ export function CardDetailPage() {
       actions={
         <>
           <Link to={`/receipt?card=${id}`}><button>تسجيل استلام</button></Link>
-          <button onClick={() => window.tamween.print()}>طباعة الكشف</button>
+          <button onClick={() => bridge.print()}>طباعة الكشف</button>
           <button className="primary" onClick={() => setEditing(true)}>تعديل</button>
         </>
       }
