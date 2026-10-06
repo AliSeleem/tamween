@@ -5,9 +5,12 @@ import react from '@vitejs/plugin-react'
 const shared = { '@shared': resolve(__dirname, 'src/shared') }
 
 export default defineConfig({
+  // Runtime libraries (exceljs) are bundled into the main script instead of shipping node_modules,
+  // which keeps the installer small. Only Electron itself stays external.
   main: {
     plugins: [externalizeDepsPlugin()],
-    resolve: { alias: shared }
+    resolve: { alias: shared },
+    build: { minify: true }
   },
   preload: {
     plugins: [externalizeDepsPlugin()],

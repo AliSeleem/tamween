@@ -25,15 +25,13 @@
     "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
+    "exceljs": "^4.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4",
     "typescript": "5.9",
     "vite": "^7.3.7",
     "vitest": "^3.2.7"
-  },
-  "dependencies": {
-    "exceljs": "^4.4.0"
   },
   "engines": {
     "node": ">=22.5"
@@ -48,6 +46,11 @@
       "out/**/*",
       "package.json"
     ],
+    "electronLanguages": [
+      "ar",
+      "en-US"
+    ],
+    "compression": "maximum",
     "win": {
       "target": [
         {
