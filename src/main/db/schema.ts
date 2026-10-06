@@ -2,7 +2,13 @@
 // Money is stored in piasters (1 EGP = 100) and quantities as whole units of the product's unit.
 // Periods are identified by their month key 'YYYY-MM', so a ledger row can point at a month
 // (for example an advance against next month) before that month has been opened.
-export const migrations: string[] = [
+export interface Migration {
+  sql: string
+  /** set when the migration recreates a table that others reference */
+  rebuildsTables?: boolean
+}
+
+export const migrations: (string | Migration)[] = [
   `
   CREATE TABLE users (
     id INTEGER PRIMARY KEY,
@@ -214,5 +220,29 @@ export const migrations: string[] = [
     details TEXT
   );
   CREATE INDEX audit_log_at ON audit_log(at);
-  `
+  `,
+  {
+    // 2: shop registers identify citizens by name and secret number; the card number becomes optional.
+    rebuildsTables: true,
+    sql: `
+    CREATE TABLE cards_new (
+      id INTEGER PRIMARY KEY,
+      card_number TEXT UNIQUE,
+      holder_name TEXT NOT NULL,
+      secret_ref TEXT,
+      bakery TEXT,
+      members INTEGER NOT NULL CHECK (members >= 1),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'cancelled')),
+      group_name TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      CHECK (card_number IS NOT NULL OR secret_ref IS NOT NULL)
+    );
+    INSERT INTO cards_new SELECT id, card_number, holder_name, secret_ref, bakery, members, status, group_name, created_at, updated_at FROM cards;
+    DROP TABLE cards;
+    ALTER TABLE cards_new RENAME TO cards;
+    CREATE INDEX cards_holder_name ON cards(holder_name);
+    CREATE INDEX cards_secret_ref ON cards(secret_ref);
+    `
+  }
 ]

@@ -86,8 +86,8 @@ export function createHandlers(ctx: Ctx, platform: Platform): Handlers {
       requireAdmin(ctx)
       const path = await platform.pickImportFile()
       if (!path) return null
-      const sheet = await importer.readSheet(path)
-      return { sheet, mapping: importer.guessMapping(sheet.headers) }
+      const sheets = await importer.readWorkbook(path)
+      return { sheets: sheets.map((sheet) => ({ sheet, mapping: importer.guessMapping(sheet.headers) })) }
     },
     'import.preview': (a) => {
       requireUser(ctx)

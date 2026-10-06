@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Distribution, PosTransaction, RightsRow } from '@shared/types'
-import { formatMoney, monthLabel } from '@shared/util'
+import { formatMoney, monthLabel, cardLabel } from '@shared/util'
 import { call } from '../api'
 import { useSession } from '../session'
 import { Empty, Money, useAction, VoidDialog } from './ui'
@@ -77,7 +77,7 @@ export function PosTxTable({ rows, onChange, showCard }: { rows: PosTransaction[
           {rows.map((t) => (
             <tr key={t.id} className={t.status === 'voided' ? 'voided' : ''}>
               <td className="num">{t.id}</td>
-              {showCard && <td><b className="num">{t.cardNumber}</b> {t.holderName}</td>}
+              {showCard && <td><b className="num">{cardLabel(t)}</b> {t.holderName}</td>}
               <td className="num">{t.executedAt}</td>
               <td className="num">{t.batchNumber}</td>
               <td>{t.items.map((i) => `${i.productName} ${i.quantity}`).join('، ')}</td>
@@ -138,7 +138,7 @@ export function DistributionTable({ rows, onChange, showCard }: { rows: Distribu
           {rows.map((d) => (
             <tr key={d.id} className={d.status === 'voided' ? 'voided' : ''}>
               <td className="num">{d.id}</td>
-              {showCard && <td><b className="num">{d.cardNumber}</b> {d.holderName}</td>}
+              {showCard && <td><b className="num">{cardLabel(d)}</b> {d.holderName}</td>}
               <td className="num">{d.distributedAt}</td>
               <td>
                 {d.items.map((i, k) => (

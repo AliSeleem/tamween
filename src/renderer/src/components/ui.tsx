@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Card, PosStatus, ReceiptStatus } from '@shared/types'
-import { formatMoney } from '@shared/util'
+import { formatMoney, cardLabel } from '@shared/util'
 import { call } from '../api'
 
 export function Modal(props: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
@@ -159,7 +159,7 @@ export function CardPicker(props: { onPick: (card: Card) => void; autoFocus?: bo
         <div className="results">
           {results.map((c, i) => (
             <div key={c.id} className={i === hl ? 'hl' : ''} onMouseDown={() => pick(c)}>
-              <b className="num">{c.cardNumber}</b>
+              <b className="num">{cardLabel(c)}</b>
               <span className="grow">{c.holderName}</span>
               <span className="muted small">{c.members} أفراد</span>
               {c.status !== 'active' && <span className="badge danger">{c.status === 'suspended' ? 'موقوفة' : 'ملغاة'}</span>}

@@ -1,5 +1,5 @@
 import type { Alert, AuditEntry, CardMonthContext, DashboardSummary, TrackingFilter, TrackingResult, TrackingRow } from '@shared/types'
-import { addMonths, formatMoney, ltr, monthLabel, normalizeDigits } from '@shared/util'
+import { addMonths, arabicKey, formatMoney, ltr, monthLabel, normalizeDigits } from '@shared/util'
 import { getCard } from './cards'
 import type { Ctx } from './context'
 import { listDistributions } from './distribution'
@@ -21,10 +21,10 @@ const FILTERS: Record<TrackingFilter, (s: CardMonthStatus) => boolean> = {
 
 export function tracking(ctx: Ctx, args: { month: string; filter: TrackingFilter; query?: string; limit?: number; offset?: number }): TrackingResult {
   const statuses = monthStatuses(ctx, args.month)
-  const cards = ctx.db.all<{ id: number; card_number: string; holder_name: string; members: number | null }>(
-    `SELECT c.id, c.card_number, c.holder_name, s.members
+  const cards = ctx.db.all<{ id: number; card_number: string | null; secret_ref: string | null; holder_name: string; members: number | null }>(
+    `SELECT c.id, c.card_number, c.secret_ref, c.holder_name, s.members
      FROM cards c LEFT JOIN card_monthly_snapshots s ON s.card_id = c.id AND s.month = ?
-     ORDER BY c.card_number`,
+     ORDER BY c.card_number IS NULL, c.card_number, c.holder_name`,
     [args.month]
   )
   const q = normalizeDigits(args.query ?? '').trim()
@@ -35,10 +35,11 @@ export function tracking(ctx: Ctx, args: { month: string; filter: TrackingFilter
     if (!s) continue
     for (const k of Object.keys(FILTERS) as TrackingFilter[]) if (FILTERS[k](s)) counts[k]++
     if (!FILTERS[args.filter](s)) continue
-    if (q && !c.card_number.startsWith(q) && !c.holder_name.includes(q)) continue
+    if (q && !c.card_number?.startsWith(q) && c.secret_ref !== q && !arabicKey(c.holder_name).includes(arabicKey(q))) continue
     matched.push({
       cardId: c.id,
       cardNumber: c.card_number,
+      secretRef: c.secret_ref,
       holderName: c.holder_name,
       members: c.members ?? 0,
       posStatus: s.posStatus,

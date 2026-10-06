@@ -1,5 +1,6 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
-import { migrations } from './schema'
+import { arabicKey } from '@shared/util'
+import { migrations, type Migration } from './schema'
 
 export type Params = Record<string, SQLInputValue> | SQLInputValue[]
 
@@ -11,6 +12,8 @@ export class Db {
   constructor(path: string) {
     this.raw = new DatabaseSync(path)
     this.raw.exec('PRAGMA foreign_keys = ON')
+    // Lets name searches ignore أ/ا, ى/ي, ة/ه spelling differences.
+    this.raw.function('arkey', { deterministic: true }, (v) => (v == null ? null : arabicKey(String(v))))
     if (path !== ':memory:') {
       this.raw.exec('PRAGMA journal_mode = WAL')
       this.raw.exec('PRAGMA busy_timeout = 5000')
@@ -21,10 +24,20 @@ export class Db {
   private migrate(): void {
     const current = (this.raw.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
     for (let i = current; i < migrations.length; i++) {
-      this.tx(() => {
-        this.raw.exec(migrations[i])
-        this.raw.exec(`PRAGMA user_version = ${i + 1}`)
-      })
+      const m: Migration = typeof migrations[i] === 'string' ? { sql: migrations[i] as string } : (migrations[i] as Migration)
+      // Rebuilding a referenced table needs foreign keys off, which SQLite only allows outside a transaction.
+      if (m.rebuildsTables) this.raw.exec('PRAGMA foreign_keys = OFF')
+      try {
+        this.tx(() => {
+          this.raw.exec(m.sql)
+          if (m.rebuildsTables && this.raw.prepare('PRAGMA foreign_key_check').all().length) {
+            throw new Error(`migration ${i + 1} broke foreign keys`)
+          }
+          this.raw.exec(`PRAGMA user_version = ${i + 1}`)
+        })
+      } finally {
+        if (m.rebuildsTables) this.raw.exec('PRAGMA foreign_keys = ON')
+      }
     }
   }
 

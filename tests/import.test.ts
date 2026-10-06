@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import ExcelJS from 'exceljs'
 import { describe, expect, it } from 'vitest'
-import { commitImport, guessMapping, previewImport, readSheet } from '../src/main/services/importer'
+import { commitImport, guessMapping, previewImport, readSheet, readWorkbook } from '../src/main/services/importer'
 import { addCard, setup } from './helpers'
 
 describe('Excel import', () => {
@@ -44,5 +44,57 @@ describe('Excel import', () => {
     writeFileSync(path, '﻿رقم البطاقة,الاسم,عدد الأفراد\n2001,"علي, محمد",3\n')
     const sheet = await readSheet(path)
     expect(sheet.rows).toEqual([['2001', 'علي, محمد', '3']])
+  })
+})
+
+describe('shop register layout (no card numbers, titles above the header)', () => {
+  it('finds the header row, identifies cards by secret number and name, and picks sheets', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tamween-'))
+    const path = join(dir, 'register.xlsx')
+    const wb = new ExcelJS.Workbook()
+    const old = wb.addWorksheet('Sheet1')
+    old.addRow(['مكتب تموين'])
+    old.addRow(['الاسم ', 'رقم سرى ', 'ع افراد', 'مخبز'])
+    old.addRow(['قديم', 1, 1, 'ب'])
+    const ws = wb.addWorksheet('Sheet3')
+    ws.addRow(['مكتب تموين بنى حرام'])
+    ws.addRow(['التاجرة /فلانة'])
+    ws.addRow(['ربط البطاقات التموينية '])
+    ws.addRow(['الاسم ', 'رقم سرى ', 'ع افراد', 'مخبز', 1, 2, 3])
+    ws.addRow(['فتحى رشدى عبدالناصر', 1111, 1, 'ن'])
+    ws.addRow(['محمد محمد خلف ', 1111, 2, 'ن '])   // same secret number, different person
+    ws.addRow(['خالد  خميس محجوب', 8518, 3, 'ب'])
+    ws.addRow(['خالد خميس محجوب ', 8518, 3, 'ب'])  // same person twice
+    ws.addRow([])
+    ws.addRow(['بدون رقم', null, 2, 'م'])
+    await wb.xlsx.writeFile(path)
+
+    const sheets = await readWorkbook(path)
+    expect(sheets.map((s) => [s.sheetName, s.headerRow, s.rows.length])).toEqual([['Sheet1', 2, 1], ['Sheet3', 4, 6]])
+    const sheet = sheets[1]
+    const m = guessMapping(sheet.headers)
+    expect(m).toEqual({ holderName: 0, secretRef: 1, members: 2, bakery: 3 })
+    const mapping = { cardNumber: null, ...m } as Parameters<typeof previewImport>[2]
+
+    const env = setup()
+    const preview = previewImport(env.ctx, sheet, mapping)
+    expect(preview.map((r) => [r.line, r.status])).toEqual([[5, 'new'], [6, 'new'], [7, 'new'], [8, 'error'], [10, 'error']])
+    expect(preview[1].bakery).toBe('ن')
+    expect(preview[2].holderName).toBe('خالد خميس محجوب')
+    expect(commitImport(env.ctx, sheet, mapping, false)).toMatchObject({ created: 3 })
+
+    // Re-importing finds the same cards (spelling variants folded) instead of duplicating them.
+    const again = previewImport(env.ctx, sheet, mapping)
+    expect(again.filter((r) => r.status !== 'error').map((r) => r.status)).toEqual(['unchanged', 'unchanged', 'unchanged'])
+    expect(env.call('cards.search', { query: '1111' }).total).toBe(2)
+  })
+})
+
+describe('search', () => {
+  it('finds names whatever the spelling of ى/ي and أ/ا', () => {
+    const env = setup()
+    env.call('cards.create', { cardNumber: null, holderName: 'فتحى رشدى أحمد', secretRef: '1111', bakery: null, members: 1, status: 'active', groupName: null })
+    expect(env.call('cards.search', { query: 'فتحي رشدي احمد' }).total).toBe(1)
+    expect(env.call('cards.search', { query: '1111' }).total).toBe(1)
   })
 })

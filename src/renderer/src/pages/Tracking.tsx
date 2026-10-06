@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { cardLabel } from '@shared/util'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { TrackingFilter } from '@shared/types'
 import { useApi } from '../api'
@@ -50,7 +51,7 @@ export function TrackingPage() {
                 <tbody>
                   {data?.rows.map((r) => (
                     <tr key={r.cardId} className="clickable" onClick={() => nav(`/cards/${r.cardId}`)}>
-                      <td className="num"><b>{r.cardNumber}</b></td>
+                      <td className="num"><b>{cardLabel(r)}</b></td>
                       <td>{r.holderName}</td>
                       <td className="num">{r.members}</td>
                       <td><PosBadge status={r.posStatus} /></td>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { formatMoney, monthLabel } from '@shared/util'
+import { formatMoney, monthLabel, cardLabel } from '@shared/util'
 import { call, useApi } from '../api'
 import { Page } from '../components/Page'
 import { DistributionTable, PosTxTable, RightsTable } from '../components/tables'
@@ -40,7 +40,7 @@ export function CardDetailPage() {
 
   return (
     <Page
-      title={data ? <>بطاقة <bdi>{data.card.cardNumber}</bdi></> : 'بطاقة'}
+      title={data ? <>بطاقة <bdi>{cardLabel(data.card)}</bdi></> : 'بطاقة'}
       showMonth={false}
       actions={
         <>
@@ -56,6 +56,7 @@ export function CardDetailPage() {
           <div className="panel panel-body">
             <dl className="kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr auto 1fr' }}>
               <dt>صاحب البطاقة</dt><dd>{data.card.holderName}</dd>
+              <dt>رقم البطاقة</dt><dd className="num">{data.card.cardNumber ?? '—'}</dd>
               <dt>عدد الأفراد الحالي</dt><dd className="num">{data.card.members}</dd>
               <dt>الحالة</dt><dd>{CARD_STATUS_LABEL[data.card.status]}</dd>
               <dt>المخبز</dt><dd>{data.card.bakery ?? '—'}</dd>

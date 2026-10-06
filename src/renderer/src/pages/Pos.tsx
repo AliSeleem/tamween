@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { CardMonthContext } from '@shared/types'
-import { formatMoney, monthLabel, parseMoney, todayIso } from '@shared/util'
+import { formatMoney, monthLabel, parseMoney, todayIso, cardLabel } from '@shared/util'
 import { call, useApi } from '../api'
 import { Page } from '../components/Page'
 import { PosTxTable } from '../components/tables'
@@ -207,7 +207,7 @@ function StrikeForm(props: { batchId: number; month: string; onDone: () => void 
         {ctx && (
           <>
             <div className="row">
-              <h2 className="grow"><span className="num">{ctx.card.cardNumber}</span> · {ctx.card.holderName}</h2>
+              <h2 className="grow"><span className="num">{cardLabel(ctx.card)}</span> · {ctx.card.holderName}</h2>
               <span className="muted">{ctx.snapshotMembers ?? '—'} أفراد</span>
               <PosBadge status={ctx.posStatus} />
               <ReceiptBadge status={ctx.receiptStatus} />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { cardLabel } from '@shared/util'
 import { useNavigate } from 'react-router-dom'
 import type { Card, CardInput, CardStatus } from '@shared/types'
 import { call, useApi } from '../api'
@@ -36,12 +37,13 @@ export function CardsPage() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>رقم البطاقة</th><th>صاحب البطاقة</th><th className="num">الأفراد</th><th>المخبز</th><th>الحالة</th><th>آخر تحديث</th></tr>
+                <tr><th>رقم البطاقة</th><th>الرقم السري</th><th>صاحب البطاقة</th><th className="num">الأفراد</th><th>المخبز</th><th>الحالة</th><th>آخر تحديث</th></tr>
               </thead>
               <tbody>
                 {data?.rows.map((c) => (
                   <tr key={c.id} className="clickable" onClick={() => nav(`/cards/${c.id}`)}>
-                    <td className="num"><b>{c.cardNumber}</b></td>
+                    <td className="num"><b>{c.cardNumber ?? '—'}</b></td>
+                    <td className="num">{c.secretRef ?? '—'}</td>
                     <td>{c.holderName}</td>
                     <td className="num">{c.members}</td>
                     <td>{c.bakery ?? '—'}</td>
@@ -78,7 +80,7 @@ export function CardsPage() {
 
 export function CardForm(props: { card: Card | null; onClose: () => void; onSaved: (c: Card) => void }) {
   const [form, setForm] = useState<CardInput>(
-    props.card ?? { cardNumber: '', holderName: '', secretRef: null, bakery: null, members: 1, status: 'active', groupName: null }
+    props.card ?? { cardNumber: null, holderName: '', secretRef: null, bakery: null, members: 1, status: 'active', groupName: null }
   )
   const [reason, setReason] = useState('')
   const run = useAction()
@@ -86,7 +88,7 @@ export function CardForm(props: { card: Card | null; onClose: () => void; onSave
   const membersChanged = props.card && props.card.members !== form.members
   return (
     <Modal
-      title={props.card ? `تعديل البطاقة ${props.card.cardNumber}` : 'بطاقة جديدة'}
+      title={props.card ? `تعديل البطاقة ${cardLabel(props.card)}` : 'بطاقة جديدة'}
       onClose={props.onClose}
       footer={
         <>
@@ -107,7 +109,7 @@ export function CardForm(props: { card: Card | null; onClose: () => void; onSave
       }
     >
       <div className="grid cols-2">
-        <Field label="رقم البطاقة"><input value={form.cardNumber} onChange={(e) => set('cardNumber', e.target.value)} autoFocus /></Field>
+        <Field label="رقم البطاقة (اختياري إذا وُجد الرقم السري)"><input value={form.cardNumber ?? ''} onChange={(e) => set('cardNumber', e.target.value || null)} autoFocus /></Field>
         <Field label="اسم صاحب البطاقة"><input value={form.holderName} onChange={(e) => set('holderName', e.target.value)} /></Field>
         <Field label="عدد الأفراد"><input type="number" min={1} value={form.members} onChange={(e) => set('members', Number(e.target.value))} /></Field>
         <Field label="الرقم السري / البيان التعريفي"><input value={form.secretRef ?? ''} onChange={(e) => set('secretRef', e.target.value)} /></Field>

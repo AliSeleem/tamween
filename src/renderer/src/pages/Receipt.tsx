@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { CardMonthContext } from '@shared/types'
-import { addMonths, monthLabel, todayIso } from '@shared/util'
+import { addMonths, monthLabel, todayIso, cardLabel } from '@shared/util'
 import { call } from '../api'
 import { Page } from '../components/Page'
 import { DistributionTable, RemainingBadge, RightsTable } from '../components/tables'
@@ -54,7 +54,7 @@ export function ReceiptPage() {
           <div className="panel panel-body row">
             <div className="grow">
               <h2>
-                <Link to={`/cards/${ctx.card.id}`} className="num">{ctx.card.cardNumber}</Link> · {ctx.card.holderName}
+                <Link to={`/cards/${ctx.card.id}`} className="num">{cardLabel(ctx.card)}</Link> · {ctx.card.holderName}
               </h2>
               <div className="muted small">
                 {ctx.snapshotMembers != null ? `${ctx.snapshotMembers} أفراد في ${monthLabel(month)}` : 'غير مدرجة في هذا الشهر'}

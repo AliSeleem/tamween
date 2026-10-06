@@ -51,7 +51,8 @@ export interface PeriodConfig {
 
 export interface Card {
   id: number
-  cardNumber: string
+  /** official card number; optional because shop registers often key citizens by name and secret number */
+  cardNumber: string | null
   holderName: string
   secretRef: string | null
   bakery: string | null
@@ -114,7 +115,8 @@ export interface PosTransaction {
   batchId: number
   batchNumber: string
   cardId: number
-  cardNumber: string
+  cardNumber: string | null
+  secretRef: string | null
   holderName: string
   month: string
   executedAt: string
@@ -138,7 +140,8 @@ export interface DistributionItem {
 export interface Distribution {
   id: number
   cardId: number
-  cardNumber: string
+  cardNumber: string | null
+  secretRef: string | null
   holderName: string
   month: string
   distributedAt: string
@@ -210,7 +213,8 @@ export type TrackingFilter =
 
 export interface TrackingRow {
   cardId: number
-  cardNumber: string
+  cardNumber: string | null
+  secretRef: string | null
   holderName: string
   members: number
   posStatus: PosStatus
@@ -286,12 +290,15 @@ export interface AuditEntry {
 
 export interface ImportSheet {
   fileName: string
+  sheetName: string
+  /** 1-based row of the header in the original sheet; data rows follow it */
+  headerRow: number
   headers: string[]
   rows: string[][]
 }
 
 export interface ImportMapping {
-  cardNumber: number
+  cardNumber: number | null
   holderName: number
   secretRef: number | null
   bakery: number | null
@@ -300,7 +307,7 @@ export interface ImportMapping {
 
 export interface ImportPreviewRow {
   line: number
-  cardNumber: string
+  cardNumber: string | null
   holderName: string
   secretRef: string | null
   bakery: string | null

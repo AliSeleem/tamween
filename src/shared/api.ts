@@ -63,7 +63,7 @@ export interface ApiSpec {
 
   'audit.list': [{ entity?: string; limit?: number; offset?: number }, AuditEntry[]]
 
-  'import.pickFile': [void, { sheet: ImportSheet; mapping: Partial<ImportMapping> } | null]
+  'import.pickFile': [void, { sheets: { sheet: ImportSheet; mapping: Partial<ImportMapping> }[] } | null]
   'import.preview': [{ sheet: ImportSheet; mapping: ImportMapping }, ImportPreviewRow[]]
   'import.commit': [{ sheet: ImportSheet; mapping: ImportMapping; updateExisting: boolean }, ImportResult]
 

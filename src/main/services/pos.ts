@@ -142,7 +142,7 @@ export function listPosTransactions(ctx: Ctx, f: { cardId?: number; batchId?: nu
   if (f.batchId) { where.push('t.batch_id = ?'); params.push(f.batchId) }
   if (f.month) { where.push('t.month = ?'); params.push(f.month) }
   const rows = ctx.db.all<Omit<PosTransaction, 'items'>>(
-    `SELECT t.id, t.batch_id AS batchId, b.batch_number AS batchNumber, t.card_id AS cardId, c.card_number AS cardNumber,
+    `SELECT t.id, t.batch_id AS batchId, b.batch_number AS batchNumber, t.card_id AS cardId, c.card_number AS cardNumber, c.secret_ref AS secretRef,
        c.holder_name AS holderName, t.month, t.executed_at AS executedAt, t.total_piasters AS totalPiasters,
        t.entitled_value_piasters AS entitledValuePiasters, t.difference_piasters AS differencePiasters, t.status,
        t.void_reason AS voidReason, t.notes, u.display_name AS createdBy

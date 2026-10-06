@@ -12,7 +12,7 @@ export function listDistributions(ctx: Ctx, f: { cardId?: number; month?: string
   if (f.cardId) { where.push('d.card_id = ?'); params.push(f.cardId) }
   if (f.month) { where.push('d.month = ?'); params.push(f.month) }
   const rows = ctx.db.all<Omit<Distribution, 'items'>>(
-    `SELECT d.id, d.card_id AS cardId, c.card_number AS cardNumber, c.holder_name AS holderName, d.month,
+    `SELECT d.id, d.card_id AS cardId, c.card_number AS cardNumber, c.secret_ref AS secretRef, c.holder_name AS holderName, d.month,
        d.distributed_at AS distributedAt, d.status, d.void_reason AS voidReason, d.notes, u.display_name AS createdBy
      FROM distributions d JOIN cards c ON c.id = d.card_id LEFT JOIN users u ON u.id = d.created_by
      ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY d.id DESC`,

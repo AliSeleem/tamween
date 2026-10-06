@@ -1,5 +1,5 @@
 import type { Card, CardHistoryEntry, CardInput, CardStatement, CardStatus, LedgerEntry } from '@shared/types'
-import { normalizeDigits } from '@shared/util'
+import { arabicKey, normalizeDigits } from '@shared/util'
 import type { Ctx } from './context'
 import { AppError, audit, requireAdmin, requireUser } from './context'
 import { listDistributions } from './distribution'
@@ -9,7 +9,7 @@ import { listPosTransactions } from './pos'
 
 interface CardRow {
   id: number
-  card_number: string
+  card_number: string | null
   holder_name: string
   secret_ref: string | null
   bakery: string | null
@@ -44,15 +44,23 @@ export function findCardByNumber(ctx: Ctx, cardNumber: string): Card | null {
   return r ? toCard(r) : null
 }
 
+/** For registers without card numbers: the same secret number and the same name (spelling variants folded). */
+export function findCardBySecretAndName(ctx: Ctx, secretRef: string, holderName: string): Card | null {
+  const key = arabicKey(holderName)
+  const rows = ctx.db.all<CardRow>('SELECT * FROM cards WHERE secret_ref = ?', [normalizeDigits(secretRef).trim()])
+  const r = rows.find((c) => arabicKey(c.holder_name) === key)
+  return r ? toCard(r) : null
+}
+
 /** Search by card number (prefix) or holder name (contains). Exact card-number matches come first. */
 export function searchCards(ctx: Ctx, args: { query?: string; status?: CardStatus | 'all'; limit?: number; offset?: number }): { rows: Card[]; total: number } {
   const q = normalizeDigits(args.query ?? '').trim()
   const where: string[] = []
   const params: Record<string, string | number> = {}
   if (q) {
-    where.push("(card_number LIKE :prefix OR holder_name LIKE :contains OR secret_ref = :exact)")
+    where.push('(card_number LIKE :prefix OR arkey(holder_name) LIKE :contains OR secret_ref = :exact)')
     params.prefix = `${q}%`
-    params.contains = `%${q}%`
+    params.contains = `%${arabicKey(q)}%`
     params.exact = q
   }
   if (args.status && args.status !== 'all') {
@@ -61,7 +69,9 @@ export function searchCards(ctx: Ctx, args: { query?: string; status?: CardStatu
   }
   const w = where.length ? `WHERE ${where.join(' AND ')}` : ''
   const total = ctx.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM cards ${w}`, params)!.n
-  const order = q ? 'CASE WHEN card_number = :exactNum THEN 0 ELSE 1 END, card_number' : 'card_number'
+  const order = q
+    ? 'CASE WHEN card_number = :exactNum OR secret_ref = :exactNum THEN 0 ELSE 1 END, holder_name'
+    : 'card_number IS NULL, card_number, holder_name'
   if (q) params.exactNum = q
   const rows = ctx.db.all<CardRow>(`SELECT * FROM cards ${w} ORDER BY ${order} LIMIT :limit OFFSET :offset`, {
     ...params,
@@ -72,9 +82,10 @@ export function searchCards(ctx: Ctx, args: { query?: string; status?: CardStatu
 }
 
 function validate(input: CardInput): CardInput {
-  const cardNumber = normalizeDigits(String(input.cardNumber ?? '')).trim()
-  const holderName = String(input.holderName ?? '').trim()
-  if (!cardNumber) throw new AppError('رقم البطاقة مطلوب')
+  const cardNumber = normalizeDigits(String(input.cardNumber ?? '')).trim() || null
+  const holderName = String(input.holderName ?? '').replace(/\s+/g, ' ').trim()
+  const secretRef = normalizeDigits(String(input.secretRef ?? '')).trim() || null
+  if (!cardNumber && !secretRef) throw new AppError('أدخل رقم البطاقة أو الرقم السري')
   if (!holderName) throw new AppError('اسم صاحب البطاقة مطلوب')
   if (!Number.isInteger(input.members) || input.members < 1 || input.members > 30) throw new AppError('عدد الأفراد غير صحيح')
   if (!['active', 'suspended', 'cancelled'].includes(input.status)) throw new AppError('حالة البطاقة غير صحيحة')
@@ -82,7 +93,7 @@ function validate(input: CardInput): CardInput {
   return {
     cardNumber,
     holderName,
-    secretRef: clean(input.secretRef),
+    secretRef,
     bakery: clean(input.bakery),
     members: input.members,
     status: input.status,
@@ -94,7 +105,10 @@ export function createCard(ctx: Ctx, input: CardInput, source = 'manual'): Card 
   requireUser(ctx)
   const c = validate(input)
   return ctx.db.tx(() => {
-    if (findCardByNumber(ctx, c.cardNumber)) throw new AppError(`رقم البطاقة ${c.cardNumber} مسجل من قبل`)
+    if (c.cardNumber && findCardByNumber(ctx, c.cardNumber)) throw new AppError(`رقم البطاقة ${c.cardNumber} مسجل من قبل`)
+    if (!c.cardNumber && findCardBySecretAndName(ctx, c.secretRef!, c.holderName)) {
+      throw new AppError(`يوجد بطاقة بنفس الاسم والرقم السري ${c.secretRef}`)
+    }
     const id = ctx.db.run(
       'INSERT INTO cards (card_number, holder_name, secret_ref, bakery, members, status, group_name) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [c.cardNumber, c.holderName, c.secretRef, c.bakery, c.members, c.status, c.groupName]
@@ -128,7 +142,7 @@ export function updateCard(ctx: Ctx, id: number, input: CardInput, reason?: stri
     const before = getCard(ctx, id)
     if (c.cardNumber !== before.cardNumber) {
       if (user.role !== 'admin') throw new AppError('تغيير رقم البطاقة يحتاج صلاحية المدير')
-      if (findCardByNumber(ctx, c.cardNumber)) throw new AppError(`رقم البطاقة ${c.cardNumber} مسجل من قبل`)
+      if (c.cardNumber && findCardByNumber(ctx, c.cardNumber)) throw new AppError(`رقم البطاقة ${c.cardNumber} مسجل من قبل`)
     }
     const changes: { field: string; old: unknown; new: unknown }[] = []
     for (const key of Object.keys(FIELD_COLUMNS) as (keyof CardInput)[]) {

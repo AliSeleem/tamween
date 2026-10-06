@@ -48,6 +48,25 @@ export function normalizeDigits(text: string): string {
     .replace(/٫/g, '.')
 }
 
+/** Folds spelling variants (أ/إ/آ, ى/ي, ة/ه, extra spaces) so the same Arabic name or header matches. */
+export function arabicKey(text: string): string {
+  return normalizeDigits(text)
+    .replace(/[\u064B-\u0652\u0640]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+/** How a card is named on screen: its official number, else its secret number. */
+export function cardLabel(c: { cardNumber: string | null; secretRef?: string | null; id?: number }): string {
+  if (c.cardNumber) return c.cardNumber
+  if (c.secretRef) return `س ${c.secretRef}`
+  return `#${c.id ?? ''}`
+}
+
 /** Keeps a code such as a batch number in left-to-right order inside Arabic text. */
 export function ltr(text: string): string {
   return `\u2066${text}\u2069`
