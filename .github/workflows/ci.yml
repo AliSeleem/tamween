@@ -38,15 +38,25 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: npm ci
+      # Small installer: fetches the WebView2 runtime only if Windows lacks it (needs internet then).
       - run: npm run dist:win
-      - name: Report installer size
+      - name: Keep the small installer
+        shell: bash
+        run: mkdir -p release && mv target/release/bundle/nsis/*.exe release/
+      # Offline installer: carries the WebView2 runtime, for shop PCs without internet.
+      - run: npm run dist:win -- --config '{"bundle":{"windows":{"webviewInstallMode":{"type":"offlineInstaller"}}}}'
+      - name: Name the offline installer
         shell: bash
         run: |
-          for f in target/release/bundle/nsis/*.exe; do
+          for f in target/release/bundle/nsis/*.exe; do mv "$f" "release/$(basename "${f%.exe}")-offline.exe"; done
+      - name: Report installer sizes
+        shell: bash
+        run: |
+          for f in release/*.exe; do
             echo "$(basename "$f"): $(du -k "$f" | cut -f1) KB" | tee -a "$GITHUB_STEP_SUMMARY"
           done
       - uses: actions/upload-artifact@v4
         with:
           name: Tamween-Windows-Installer
-          path: target/release/bundle/nsis/*.exe
+          path: release/*.exe
           if-no-files-found: error
