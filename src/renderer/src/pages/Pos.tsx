@@ -7,6 +7,7 @@ import { Page } from '../components/Page'
 import { PosTxTable } from '../components/tables'
 import { CardPicker, Empty, ErrorBox, Field, Meter, Modal, Money, PosBadge, ReceiptBadge, useAction } from '../components/ui'
 import { useSession } from '../session'
+import { bridge } from '../bridge'
 
 export function PosBatchesPage() {
   const { month, periods } = useSession()
@@ -130,7 +131,7 @@ export function PosBatchPage() {
       actions={
         <>
           <Link to="/pos"><button>كل الدفعات</button></Link>
-          <button onClick={() => window.tamween.print()}>طباعة</button>
+          <button onClick={() => bridge.print()}>طباعة</button>
           {isAdmin && (
             <button onClick={() => run(() => call('pos.setBatchStatus', { id, status: b.status === 'open' ? 'closed' : 'open' }).then(reload), 'تم تحديث حالة الدفعة')}>
               {b.status === 'open' ? 'إغلاق الدفعة' : 'إعادة فتح الدفعة'}

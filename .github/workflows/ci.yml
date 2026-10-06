@@ -14,10 +14,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install WebKitGTK (needed to compile the Tauri shell on Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+      - run: npm run build:web
+      - run: cargo test -p tamween-core
+      - run: cargo check -p tamween
 
   windows-installer:
     needs: check
@@ -28,12 +35,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - run: npm ci
       - run: npm run dist:win
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Report installer size
+        shell: bash
+        run: |
+          for f in target/release/bundle/nsis/*.exe; do
+            echo "$(basename "$f"): $(du -k "$f" | cut -f1) KB" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: Tamween-Windows-Installer
-          path: release/*.exe
+          path: target/release/bundle/nsis/*.exe
           if-no-files-found: error

@@ -6,6 +6,7 @@ import { useApi } from '../api'
 import { Page } from '../components/Page'
 import { Empty, ErrorBox, PosBadge, ReceiptBadge } from '../components/ui'
 import { useSession } from '../session'
+import { bridge } from '../bridge'
 
 const FILTERS: [TrackingFilter, string][] = [
   ['all', 'الكل'],
@@ -25,7 +26,7 @@ export function TrackingPage() {
   const nav = useNavigate()
   const { data, error } = useApi('tracking.list', { month: month ?? '', filter, query, limit: 500 }, [month, filter, query], !!month)
   return (
-    <Page title="متابعة البطاقات" actions={<button onClick={() => window.tamween.print()}>طباعة</button>}>
+    <Page title="متابعة البطاقات" actions={<button onClick={() => bridge.print()}>طباعة</button>}>
       <ErrorBox error={error} />
       {!month ? (
         <Empty>لا يوجد شهر مفتوح.</Empty>

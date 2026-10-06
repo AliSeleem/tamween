@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ApiArgs, ApiMethod, ApiResult } from '@shared/api'
+import { bridge } from './bridge'
 
 export async function call<K extends ApiMethod>(method: K, ...args: ApiArgs<K> extends void ? [] : [ApiArgs<K>]): Promise<ApiResult<K>> {
-  const r = await window.tamween.call(method, args[0])
+  const r = await bridge.call(method, args[0])
   if (!r.ok) throw new Error(r.error)
   return r.data as ApiResult<K>
 }
@@ -28,7 +29,7 @@ export function useApi<K extends ApiMethod>(
     }
     const id = ++seq.current
     setLoading(true)
-    window.tamween.call(method, argsRef.current).then((r) => {
+    bridge.call(method, argsRef.current).then((r) => {
       if (id !== seq.current) return
       if (r.ok) {
         setData(r.data as ApiResult<K>)
