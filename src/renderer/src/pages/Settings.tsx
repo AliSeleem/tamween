@@ -348,6 +348,7 @@ function UsersTab() {
 
 function GeneralTab() {
   const { data } = useApi('settings.get', undefined)
+  const { refresh, setMonth } = useSession()
   const toast = useToast()
   const [s, setS] = useState<AppSettings | null>(null)
   const [money, setMoney] = useState('')
@@ -388,6 +389,20 @@ function GeneralTab() {
           }}
         >
           نسخة احتياطية الآن…
+        </button>
+      </div>
+      <div className="alert warning">
+        <span className="grow">للتجربة فقط: تحميل 12 بطاقة وشهر مفتوح وأسعار ودفعة ضرب وعمليات استلام. يعمل على قاعدة بيانات فارغة فقط.</span>
+        <button
+          onClick={async () => {
+            const r = await run(() => call('demo.load'), 'تم تحميل البيانات التجريبية')
+            if (r) {
+              await refresh()
+              setMonth(r.month)
+            }
+          }}
+        >
+          تحميل بيانات تجريبية
         </button>
       </div>
     </div>

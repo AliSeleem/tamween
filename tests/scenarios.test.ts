@@ -240,3 +240,18 @@ describe('permissions and audit', () => {
     expect(log.some((l) => l.entity === 'card' && l.action === 'create' && l.userName === 'موظف')).toBe(true)
   })
 })
+
+describe('demo data', () => {
+  it('loads once into an empty database and covers every tracking case', () => {
+    const env = setup()
+    const { month, cards } = env.call('demo.load', undefined)
+    expect(cards).toBe(12)
+    const t = env.call('tracking.list', { month, filter: 'all' })
+    expect(t.total).toBe(12)
+    for (const k of ['struck_not_received', 'received_not_struck', 'struck_and_received', 'neither', 'partial_receipt', 'has_balance'] as const) {
+      expect(t.counts[k]).toBeGreaterThan(0)
+    }
+    expect(env.call('pos.batchSummary', { id: 1 }).overagePiasters).toBeGreaterThan(0)
+    expect(() => env.call('demo.load', undefined)).toThrow(/فارغة/)
+  })
+})

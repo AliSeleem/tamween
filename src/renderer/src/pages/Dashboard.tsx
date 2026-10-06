@@ -1,16 +1,35 @@
 import { Link } from 'react-router-dom'
 import { formatMoney, monthLabel } from '@shared/util'
-import { useApi } from '../api'
+import { call, useApi } from '../api'
 import { Page } from '../components/Page'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, useAction } from '../components/ui'
 import { useSession } from '../session'
 
 export function DashboardPage() {
-  const { month } = useSession()
-  const { data, error } = useApi('dashboard.get', { month }, [month])
+  const { month, isAdmin, refresh, setMonth } = useSession()
+  const { data, error, reload } = useApi('dashboard.get', { month }, [month])
+  const run = useAction()
   return (
     <Page title="لوحة المتابعة">
       <ErrorBox error={error} />
+      {data && isAdmin && data.cardCount === 0 && !month && (
+        <div className="alert info">
+          <span className="grow">قاعدة البيانات فارغة. ابدأ بفتح شهر واستيراد البطاقات، أو جرّب البرنامج ببيانات تجريبية.</span>
+          <button
+            className="primary"
+            onClick={async () => {
+              const r = await run(() => call('demo.load'), 'تم تحميل البيانات التجريبية')
+              if (r) {
+                await refresh()
+                setMonth(r.month)
+                reload()
+              }
+            }}
+          >
+            تحميل بيانات تجريبية
+          </button>
+        </div>
+      )}
       {data && (
         <>
           <div className="grid cols-4">

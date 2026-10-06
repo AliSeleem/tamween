@@ -3,6 +3,7 @@ import * as auth from './services/auth'
 import * as cards from './services/cards'
 import type { Ctx } from './services/context'
 import { audit, requireAdmin, requireUser } from './services/context'
+import { loadDemoData } from './services/demo'
 import * as distribution from './services/distribution'
 import * as importer from './services/importer'
 import * as inventory from './services/inventory'
@@ -93,6 +94,8 @@ export function createHandlers(ctx: Ctx, platform: Platform): Handlers {
       return importer.previewImport(ctx, a.sheet, a.mapping)
     },
     'import.commit': (a) => importer.commitImport(ctx, a.sheet, a.mapping, a.updateExisting),
+
+    'demo.load': () => loadDemoData(ctx),
 
     'backup.create': async () => {
       requireAdmin(ctx)

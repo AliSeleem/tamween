@@ -68,6 +68,7 @@ export interface ApiSpec {
   'import.commit': [{ sheet: ImportSheet; mapping: ImportMapping; updateExisting: boolean }, ImportResult]
 
   'backup.create': [void, { path: string } | null]
+  'demo.load': [void, { month: string; cards: number }]
 }
 
 export type ApiMethod = keyof ApiSpec
